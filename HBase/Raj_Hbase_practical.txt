@@ -1,0 +1,71 @@
+create 'hbasetest','cf'
+ 
+put 'hbasetest','r1','cf:name','raj'
+put 'hbasetest','r1','cf:age','35'
+put 'hbasetest','r2','cf:name','raj2'
+put 'hbasetest','r2','cf:age','30'
+
+put 'hbasetest','r2','cf:lastname','kumar'
+put 'hbasetest','r1','cf:age','25'
+
+describe 'hbasetest'
+
+TIMESTAMP is unix time stamp and below is the command to see the date in unix
+
+date -d @1458819731
+
+
+How to get information on rowkey
+-------------------------------
+get 'hbasetest', 'r2'
+
+Get specific column from rowkey
+------------------------------
+get 'hbasetest', 'r1', {COLUMN => 'cf:age'}
+
+get 'hbasetest', 'r1', {COLUMN => ['cf:name', 'cf:age']}
+
+scan 'hbasetest' , {COLUMNS => 'cf:name'}
+
+get 'hbasetest','r1',{COLUMNS=>'cf:age',TIMESTAMP=>1458819731300}
+
+Delete operation:
+-------------------
+deleteall 'hbasetest','r2' <-- deleting entire row
+
+delete 'hbasetest','r1','cf:age',1458819731300 <-- Deleting age from row1.
+
+Drop a Table:
+----------------
+
+disable 'hbasetest'
+drop 'hbasetest'
+
+Versions:
+---------------
+create 'student','personal','school'
+put 'student','1','personal:name','raj'
+put 'student','1','school:name','school1'
+put 'student','1','school:name','school2'
+
+describe 'student'
+scan 'student',{VERSIONS=>03}
+
+Alter to change the version of personal
+-----------------------------------------
+You need to disable the table first before doing any alter.
+
+disable 'student'
+alter 'student', NAME=> 'personal', VERSIONS=> 5
+
+enable 'student'
+
+put 'student','1','personal:name','raj2'
+put 'student','1','personal:name','raj3'
+put 'student','1','personal:name','raj4'
+put 'student','1','personal:name','raj5'
+put 'student','1','school:name','school3'
+put 'student','1','school:name','school4'
+
+scan 'student'
+scan 'student',{VERSIONS=>05}

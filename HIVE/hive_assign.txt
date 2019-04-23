@@ -1,0 +1,69 @@
+create database case_ipl;
+use case_ipl;
+show tables;
+
+create table batting 
+(id int, name String, runs int, high_score int, average float, strike_rate float, sixes int) 
+partitioned by (team String) 
+row format delimited 
+fields terminated by ',' 
+stored as textfile;
+
+describe batting;
+
+load data inpath '/Batch1/hive/assign1/assign1_batting/Bangalore-r-00000' 
+overwrite into table batting 
+partition (team = 'Bangalore');
+load data inpath '/Batch1/hive/assign1/assign1_batting/Chennai-r-00000' 
+overwrite into table batting 
+partition (team = 'Chennai');
+load data inpath '/Batch1/hive/assign1/assign1_batting/Delhi-r-00000' 
+overwrite into table batting 
+partition (team = 'Delhi');
+load data inpath '/Batch1/hive/assign1/assign1_batting/Hyderabad-r-00000' 
+overwrite into table batting 
+partition (team = 'Hyderabad');
+load data inpath '/Batch1/hive/assign1/assign1_batting/Kolkata-r-00000' 
+overwrite into table batting 
+partition (team = 'Kolkata');
+load data inpath '/Batch1/hive/assign1/assign1_batting/Mumbai-r-00000' 
+overwrite into table batting 
+partition (team = 'Mumbai');
+load data inpath '/Batch1/hive/assign1/assign1_batting/Punjab-r-00000' 
+overwrite into table batting 
+partition (team = 'Punjab');
+load data inpath '/Batch1/hive/assign1/assign1_batting/Rajasthan-r-00000' 
+overwrite into table batting 
+partition (team = 'Rajasthan');
+
+select * from batting;
+
+Dynamic Partitions for bowling data set
+
+create table bowling_no_partition
+(id int, name String, team String, overs float, runs int, wickets int, avg float, economy float, strike_rate float)
+row format delimited
+fields terminated by ','
+stored as textfile;
+load data local inpath '/home/training/raj/Bowling.csv'
+overwrite into table bowling_no_partition;
+
+create table bowling
+(id int, name String, overs float, runs int, wickets int, avg float, economy float, strike_rate float)
+partitioned by (team String)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.dynamic.partition=true;
+
+insert overwrite table bowling
+partition (team)
+select bl.id, bl.name, bl.overs, bl.runs, bl.wickets, bl.avg, bl.economy, bl.strike_rate, bl.team
+from bowling_no_partition bl;
+
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.dynamic.partition=true;
+
+drop table bowling_no_partition;

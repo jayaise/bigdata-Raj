@@ -1,0 +1,3 @@
+d1,computers
+d2,electricals
+d3,civil

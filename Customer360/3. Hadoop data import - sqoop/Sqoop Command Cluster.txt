@@ -1,0 +1,24 @@
+
+sqoop import --connect jdbc:mysql://52.34.11.96/jayaise --table savingsaccount --username jayaise -P -m 1  --as-avrodatafile  --target-dir /user/jayaise/savingsaccount/
+ls *.avsc
+
+sqoop import --connect jdbc:mysql://52.34.11.96/jayaise --table loanaccount --username jayaise -P  -m 1  --as-avrodatafile  --target-dir /user/jayaise/loanaccount/
+ls *.avsc
+
+sqoop import --connect jdbc:mysql://52.34.11.96/jayaise --table depositaccount --username jayaise -P  -m 1  --as-avrodatafile  --target-dir /user/jayaise/depositaccount/
+ls *.avsc
+
+sqoop import --connect jdbc:mysql://52.34.11.96/jayaise --table creditcardtrx --username jayaise -P  -m 1  --as-avrodatafile  --target-dir /user/jayaise/creditcardtrx/
+ls *.avsc
+
+sqoop import --connect jdbc:mysql://52.34.11.96/jayaise --table creditcard --username jayaise -P  -m 1  --as-avrodatafile  --target-dir /user/jayaise/creditcard/
+ls *.avsc
+
+sqoop import --connect jdbc:mysql://52.34.11.96/jayaise --table demographics --username jayaise -P -m 1  --as-avrodatafile  --target-dir /user/jayaise/demographics/
+ls *.avsc
+
+
+
+ls *.avsc
+
+cat demographics.avsc

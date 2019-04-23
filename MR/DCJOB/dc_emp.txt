@@ -1,0 +1,11 @@
+10,raj,d1
+20,raj2,d1
+30,raj3,d2
+40,raj4,d2
+50,raj5,d3
+60,raj6,d1
+70,raj7,d1
+80,raj8,d2
+90,raj9,d3
+100,raj10,d2
+110,raj11,d1

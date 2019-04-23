@@ -1,0 +1,16 @@
+..............HBASE..............
+
+get on to hbase shell
+
+create 'jayaise_customer360', 'demographics', 'savings', 'loan', 'credit', 'deposit', 'credittrxsummary'
+
+list
+
+describe 'jayaise_customer360'
+
+
+
+
+
+
+

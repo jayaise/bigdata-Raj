@@ -1,0 +1,320 @@
+Create a file called employee.txt in comma separated (name,salary,dept)
+--------------------------------------------------------------------------
+raj,2000,d1
+saikat,3000,d2
+rahul,2000,d1
+sonal,4000,d1
+teju,5000,d2
+rakesh,1000
+
+
+create database called batch1 in your hive
+---------------------------------------------
+create database batch1;
+
+Use the database
+----------------------------
+use batch1;
+
+set hive.cli.print.current.db=true; <-- To know which DB you are refering to.
+
+create tabe called employee
+--------------------------------
+create table employee(name string, salary float, dept string)
+row format delimited
+fields terminated by ',';
+
+show tables;
+Load the data into hive table.
+-----------------------------------
+load data local inpath '/home/training/raj/employee.txt' into table employee;
+
+scan the table
+------------------------
+select * from employee;
+
+
+Go to warehouse and check the details.
+------------------------------------------
+hadoop fs -ls /user/hive/warehouse/batch1.db
+
+Run some crud operation (now MR will run)
+------------------------------------------
+select * from employee where dept='d1';
+select count(*),dept from employee group by dept;
+
+ 
+create another file called emp.txt with the same fields and send to hdfs;
+---------------------------------------------------------------------------
+emp.txt
+
+devu,5000,d3
+sai,2000,d3
+
+Load the above data into employee table.
+-----------------------------------------------
+load data inpath '/Batch1/hive/emp.txt' into table employee;   <-- remove local
+
+select * from employee;
+
+desc employee;
+desc formatted employee;
+
+Executing in different ways the hive queries.
+------------------------------------------------
+hive -e 'select * from batch1.employee'
+hive -f 1.hql
+
+Try alter commands to rename  column.
+--------------------------------------------
+ALTER TABLE employee CHANGE name ename String;
+
+Finally drop the table
+--------------------------
+drop table employee; <- check the data
+
+Other way to create the table (manage table).
+------------------------------------------------
+
+hadoop fs -mkdir /Batch1/hive/manage
+hadoop fs -put employee.txt /Batch1/hive/manage
+
+create table employee1(name string, salary float, dept string)
+row format delimited
+fields terminated by ','
+location '/Batch1/hive/manage';
+
+select * from employee1;
+
+desc formatted employee1;
+
+hadoop fs -ls /Batch1/hive/manage
+
+drop table employee1;
+
+hadoop fs -ls /Batch1/hive/manage
+
+
+External table
+--------------------------
+hadoop fs -mkdir /Batch1/hive/external
+hadoop fs -put employee.txt /Batch1/hive/external
+
+create external table employee2(name string, salary float, dept string)
+row format delimited
+fields terminated by ','
+location '/Batch1/hive/external';
+
+desc formatted employee1;
+
+-> fire a drop command.
+
+drop table employee2;
+
+hadoop fs -ls /Batch1/hive/external
+
+-----------------------------------------
+PARTITIONS: Lets assume daily basis employee records are added to employee table
+
+create 1.txt,2.txt,3.txt for each day transaction.
+
+raj,100,d1 - 1.txt
+raj,200,d1 - 2.txt
+raj,300,d1 - 3.txt
+
+then create partition on top of it.
+
+create table part_employee(name string, trans int, dept string)
+partitioned by (day string)
+row format delimited
+fields terminated by ',';
+
+load data local inpath '/home/training/raj/1.txt' into table part_employee
+partition(day='20160102');
+
+load data local inpath '/home/training/raj/2.txt' into table part_employee
+partition(day='20160103');
+
+load data local inpath '/home/training/raj/3.txt' into table part_employee
+partition(day='20160104');
+
+show partitions part_employee;
+
+External Partition:
+----------------------
+Same above scenario we will make it here.
+
+hadoop fs -mkdir /Batch1/hive/f1
+hadoop fs -mkdir /Batch1/hive/f2
+hadoop fs -mkdir /Batch1/hive/f3
+
+hadoop fs -put 1.txt /Batch1/hive/f1
+hadoop fs -put 2.txt /Batch1/hive/f2
+hadoop fs -put 3.txt /Batch1/hive/f3
+
+Create external table with partition.
+
+create external table ex_employee(name string, trans int, dept string)
+partitioned by (day string)
+row format delimited
+fields terminated by ',';
+
+alter table ex_employee
+add partition(day='20160102')
+location '/Batch1/hive/f1';
+
+alter table ex_employee
+add partition(day='20160103')
+location '/Batch1/hive/f2';
+
+alter table ex_employee
+add partition(day='20160104')
+location '/Batch1/hive/f3';
+
+
+Dynamic Partition.
+------------------
+
+Create table for storing records
+-------------------------------------------------
+create table temp(txnno INT, txndate STRING, custno INT, amount DOUBLE, 
+category STRING, product STRING, city STRING, state STRING, spendby STRING)
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+Load the data into table:
+-------
+load data local inpath '/home/training/records.txt' overwrite into table temp;
+
+create a dynamic partition table.
+----------------
+
+create table dyn_table(txnno INT, txndate STRING, custno INT, amount DOUBLE,
+product STRING, city STRING, state STRING, spendby STRING)
+partitioned by (category STRING)
+row format delimited
+fields terminated by ','
+stored as textfile;
+-----
+Configure hive partition.
+----------------
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.dynamic.partition=true;
+----
+Load the data from temp table into dynamic partiton table.
+----------------
+
+from temp t1 insert overwrite table dyn_table partition(category)
+select t1.txnno, t1.txndate,t1.custno, t1.amount,t1.product,t1.city,t1.state,
+t1.spendby, t1.category DISTRIBUTE BY category;
+
+show partitions dyn_table;
+
+HIVE query to find the diff;
+---------------------------------
+
+select * from temp where category='Games';
+select * from dyn_table where category='Games';
+------------------
+
+BUCKETING: We need to show in another VM.
+-------
+Create another table as dynamic table from temp which we can buckting.
+----
+
+create table dyn_buck_table(txnno INT, txndate STRING, custno INT, amount DOUBLE,
+product STRING, city STRING, state STRING, spendby STRING)
+partitioned by (category STRING)
+clustered by (state) INTO 10 buckets
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.dynamic.partition=true;
+set hive.enforce.bucketing=true;
+
+Load the data:
+----
+
+from temp t1 insert overwrite table dyn_buck_table partition(category)
+select t1.txnno, t1.txndate,t1.custno, t1.amount,t1.product,t1.city,t1.state,
+t1.spendby, t1.category DISTRIBUTE BY category;
+
+SELECT txnno,product,state FROM dyn_buck_table TABLESAMPLE(BUCKET 3 OUT OF 10);
+
+select txnno, product FROM dyn_buck_table TABLESAMPLE(BUCKET 2 OUT OF 10) order by txnno;
+
+----
+JOINS:
+---
+
+In the above we have created employee table and now we will create a dept table.
+
+dept.txt - (deptid and deptname)
+
+d1,computers
+d2,electrical
+d3,machanical
+d4,ETC
+
+create table dept(deptid string, deptname string)
+row format delimited
+fields terminated by ',';
+
+load data local inpath '/home/training/raj/dept.txt' into table dept;
+
+Diff joins
+------
+select a.name,a.salary,a.dept,b.deptname from 
+employee a join dept b on a.dept = b.deptid;
+
+select a.name,a.salary,a.dept,b.deptname from 
+employee a left outer join dept b on a.dept = b.deptid;
+
+select a.name,a.salary,a.dept,b.deptname from 
+employee a right outer join dept b on a.dept = b.deptid;
+
+select a.name,a.salary,a.dept,b.deptname from 
+employee a full outer join dept b on a.dept = b.deptid;
+
+MAPSIDE Job:
+-----
+select /*+MAPJOIN(dept)*/ a.name,b.deptname from
+employee a join dept b on a.dept = b.deptid;
+
+------------JOIN 3 TABLE-------------------
+emp.txt
+10,raj,d1
+20,raj1,d2
+30,ran3,d3
+ 
+create table emp(id string, name string, dept string)
+row format delimited
+fields terminated by ',';
+ 
+load data local inpath '/home/dmx/bhagaban/emp.txt' overwrite into table emp;
+ 
+dept.txt
+d1,dept1,l1
+d2,dept2,l2
+ 
+create table dept(deptid string, deptname string, loc string)
+row format delimited
+fields terminated by ',';
+ 
+load data local inpath '/home/dmx/bhagaban/dept.txt' overwrite into table dept;
+ 
+loc.txt
+l1,loc1
+l2,loc2
+ 
+create table loc(locid string, locname string)
+row format delimited
+fields terminated by ',';
+ 
+load data local inpath '/home/dmx/bhagaban/location.txt' overwrite into table loc;
+ 
+SELECT emp.id, emp.name, dept.deptname, loc.locname
+FROM emp JOIN dept ON (emp.dept = dept.deptid) JOIN loc ON (dept.loc = loc.locid);
