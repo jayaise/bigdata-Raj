@@ -1,0 +1,120 @@
+Check all the databases:
+============================
+sqoop list-databases --connect jdbc:mysql://localhost --username training --password training
+
+sqoop list-databases --connect jdbc:mysql://localhost --username $username --password $password
+
+Check all the tables inside training database:
+=================================================
+sqoop list-tables --connect jdbc:mysql://localhost/training --username training -P
+
+Importing tables:
+=============================
+
+sqoop import --connect jdbc:mysql://localhost/training --username training -P --table countries --target-dir /Batch1/country -m 1
+
+Importing specific coulmns from tables:
+==========================================
+
+sqoop import --connect jdbc:mysql://localhost/training --username training -P --table countries --columns "id,code" --target-dir /Batch1/country_name -m 1
+
+Import all columns, filter rows using where clause:
+=====================================================
+
+sqoop import --connect jdbc:mysql://localhost/training --username training -P --table countries --where "code='AF'" --target-dir /Batch1/country_AF -m 1
+
+Importing data from mysql via query:
+==========================================
+
+sqoop-import --connect jdbc:mysql://localhost/training --username training -P --target-dir /Batch1/importquery -e "Select id,name,code from countries where id=1 AND \$CONDITIONS" --m 1
+
+sqoop-import --connect jdbc:mysql://localhost/training --username training -P --target-dir /Batch1/importquery -e "Select id,name,code from countries where id=1 AND \$CONDITIONS" --m 2 --split-by id
+
+
+Joining countries and cityByCountry to get state and importing into HDFS:
+============================================================================
+sqoop-import --connect jdbc:mysql://localhost/training --username training -P --target-dir /Batch1/importjoin -e "SELECT a.id, a.name, b.state FROM countries a, cityByCountry b WHERE a.id = b.country AND \$CONDITIONS" --m 1
+
+sqoop-import --connect jdbc:mysql://localhost/training --username training -P --target-dir /Batch1/importjoin -e "SELECT a.id, a.name, b.state FROM countries a, cityByCountry b WHERE a.id = b.country AND \$CONDITIONS" --m 2 --split-by id
+
+Importing tables into HIVE directly.
+=========================================
+sqoop import --connect jdbc:mysql://localhost/training --username training -P --table Movies --hive-import -m 1
+
+Importing tables into HIVE with specify databases;
+=====================================================
+
+sqoop import --connect jdbc:mysql://localhost/training --username training -P --table Movies --hive-import --hive-table test.movies -m 1
+
+
+Import data from rdbms and store data in hdfs with pipe (|) as delimiter?
+===============================================================================
+
+sqoop import --connect jdbc:mysql://localhost/training --username training -P --table countries --target-dir /user/training/customdelim1 -m 1 --fields-terminated-by '|'
+
+hadoop fs -cat /user/training/customdelim1/*
+
+Import data from rdbms and store data in hdfs with dollar ($) as delimiter?
+==================================================================================
+
+sqoop import --connect jdbc:mysql://localhost/training --username training -P --table countries --target-dir /user/training/customdelim3 -m 1 --fields-terminated-by '$'
+
+hadoop fs -cat /user/training/customdelim3/*
+
+Create an empty hive table corresponding to the schema of countries table in mysql ? Dont import the data ?
+==================================================================================================================
+
+sqoop create-hive-table --connect jdbc:mysql://localhost/training --username training -P --table countries --hive-table test.countriesnew
+
+Now Import the data inside it;
+==========================================
+
+sqoop import --connect jdbc:mysql://localhost/training --username training -P --table Movies --hive-import --hive-table test.countriesnew -m 1
+
+How to pass sqoop options through a config file. This will help us to avoid repetative usage of same configs with all the scripts .?
+=========================================================================================================================================
+
+We need to create the option file in our location and use them whenever required.
+
+check - /home/training/options.txt
+
+sqoop --options-file /home/training/options.txt --table countries --target-dir /Batch1/test1
+
+Incremental Append in SQOOP:
+====================================
+
+Sqoop is a utility to import data from rdbms to hadoop. In some usecases, the data in the rdbms system will be incrementing daily. So in those usecases, we have to import the latest data to hdfs also. But importing the entire table for every modification will be an expensive operation. Sqoop provides an option to import the updated records alone. This feature is known as incremental import. Here is an example for that ?
+
+hive -e "drop table countries"
+hadoop fs -rmr /user/training/countries
+sqoop import --connect jdbc:mysql://localhost/training --username training -P --table countries --hive-import -m 1
+hive -e "select * from countries"
+hive -e "select count(*) from countries"
+hive -e "select MAX(id) from countries"
+
+Suppose the MAX(id) returned a value of 249, we will use that value for the next import
+
+mysql -u training -e "insert into training.countries (name, code) values ('Russia2', 'RS2')" -p
+mysql -u training -e "insert into training.countries (name, code) values ('China2', 'CN2')" -p
+mysql -u training -e "insert into training.countries (name, code) values ('Zambia2', 'ZB2')" -p
+
+sqoop import --connect jdbc:mysql://localhost/training --username training -P --table countries --hive-import -m 1 --incremental append --check-column id --last-value 256
+
+hive -e "select * from countries"
+hive -e "select count(*) from countries"
+hive -e "select MAX(id) from countriess
+
+EXPORT FROM HDFS into RDBMS:
+==================================
+Create a mysql table called 'exported':
+
+create table exported (id int, country varchar(100), code varchar(100));
+
+Then export the 'countries' table data inside mysql 'exported'
+
+sqoop export \
+--connect jdbc:mysql://localhost/training \
+--username training -P \
+--table exported \
+--export-dir /user/hive/warehouse/countries/part-m-00000 \
+--input-fields-terminated-by '\001' --lines-terminated-by '\n'
